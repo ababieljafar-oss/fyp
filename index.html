@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MSU FYP - Interactive Umrah AR</title>
+  
+  <!-- Memuat framework utama WebAR & Efek Billboard (Look-At) -->
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/dist/mindar-image.prod.js"></script>
+  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+  
+  <style>
+    body { margin: 0; overflow: hidden; }
+    /* Layar loading estetik sebelum kamera HP aktif */
+    #mindar-ui-loading { 
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; 
+      font-family: sans-serif; color: white; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; 
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Kontainer utama AR: Menghubungkan sistem ke file pelacak 10 kartu -->
+  <a-scene mindar-image="imageTargetSrc: ./targets.mind; uiLoading: #mindar-ui-loading;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    
+    <!-- PUSTAKA ASET: Tempat mendaftarkan semua file agar loading web lancar -->
+    <a-assets>
+      <!-- Aset 3D Masjidil Haram Potongan -->
+      <a-asset-item id="modelMasjid" src="./assets/masjid_haram.glb"></a-asset-item>
+      
+      <!-- Aset Gambar Karakter 2D (PNG Transparan) -->
+      <img id="charNiat" src="./assets/char_1_niat.png">
+      <img id="charTawaf" src="./assets/char_2_tawaf.png">
+      
+      <!-- Aset Gambar Layer UI Teks 2D -->
+      <img id="uiTextNiat" src="./assets/ui_1_niat.png">
+      <img id="uiTextTawaf" src="./assets/ui_2_tawaf.png">
+    </a-assets>
+
+    <!-- Kamera HP (ID ini wajib ada agar objek 2D tahu ke mana harus menghadap) -->
+    <a-camera id="kameraUser" look-controls="enabled: false"></a-camera>
+
+    <!-- ========================================================================= -->
+    <!-- KARTU 1: MAKE INTENTIONS / NIAT (targetIndex: 0) -->
+    <!-- ========================================================================= -->
+    <a-entity mindar-image-target="targetIndex: 0">
+      <!-- Menampilkan model 3D masjid setengah tepat di tengah kartu -->
+      <a-gltf-model src="#modelMasjid" position="0 0 0" scale="0.05 0.05 0.05"></a-gltf-model>
+      
+      <!-- Menampilkan karakter 2D melayang di halaman masjid & selalu menghadap kamera -->
+      <a-image src="#charNiat" position="0.2 0.4 0.1" width="0.6" height="0.9" look-at="#kameraUser"></a-image>
+      
+      <!-- Menampilkan layer 2D teks deskripsi/doa di atas bangunan -->
+      <a-image src="#uiTextNiat" position="0 1.2 0.2" width="1.3" height="0.5" look-at="#kameraUser"></a-image>
+    </a-entity>
+
+    <!-- ========================================================================= -->
+    <!-- KARTU 2: TAWAF (targetIndex: 1) -->
+    <!-- ========================================================================= -->
+    <a-entity mindar-image-target="targetIndex: 1">
+      <!-- Menggunakan model masjid yang sama untuk efisiensi memori web -->
+      <a-gltf-model src="#modelMasjid" position="0 0 0" scale="0.05 0.05 0.05"></a-gltf-model>
+      
+      <!-- Karakter 2D dengan pose/baju berbeda untuk step Tawaf -->
+      <a-image src="#charTawaf" position="-0.2 0.4 0.2" width="0.6" height="0.9" look-at="#kameraUser"></a-image>
+      <a-image src="#uiTextTawaf" position="0 1.2 0.2" width="1.3" height="0.5" look-at="#kameraUser"></a-image>
+    </a-entity>
+
+    <!-- ========================================================================= -->
+    <!-- KARTU 3 SAMPAI KARTU 10 (targetIndex: 2 sampai 9) -->
+    <!-- Kamu tinggal menduplikasi pola blok entity di atas dan sesuaikan indeksnya -->
+    <!-- ========================================================================= -->
+    <a-entity mindar-image-target="targetIndex: 2">
+      <!-- Isi konten untuk kartu ke-3 di sini -->
+    </a-entity>
+
+  </a-scene>
+
+</body>
+</html>
