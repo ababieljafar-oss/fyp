@@ -20,17 +20,21 @@
 </head>
 <body>
 
-  <a-scene mindar-image="imageTargetSrc: ./targets.mind; uiLoading: #mindar-ui-loading;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  <a-scene 
+    mindar-image="imageTargetSrc: ./assets/targets.mind; uiLoading: #mindar-ui-loading;" 
+    gltf-model="dracoDecoderPath: https://www.gstatic.com/draco/versioned/decoders/1.4.3/;" 
+    vr-mode-ui="enabled: false" 
+    device-orientation-permission-ui="enabled: false">
     
-   <a-assets>
-  <a-asset-item id="modelMasjid" src="assets/kaaba.glb"></a-asset-item>
-  
-  <img id="charWearIhram" src="https://fyp-one-peach.vercel.app/assets/char-wear_ihram.png">
-  <img id="charEnterMasjid" src="https://fyp-one-peach.vercel.app/assets/char-enter_masjid.png">
-  <img id="charFirstSight" src="https://fyp-one-peach.vercel.app/assets/char-first_sight_of_kaaba.png">
-  <img id="charNiat" src="https://fyp-one-peach.vercel.app/assets/char-make_intentions.png">
-  <img id="charReciteTalbiyah" src="https://fyp-one-peach.vercel.app/assets/char-recite_talbiyah.png">
-</a-assets>
+    <a-assets>
+      <a-asset-item id="modelMasjid" src="./assets/kaaba.glb"></a-asset-item>
+      
+      <img id="charWearIhram" src="./assets/char-wear_ihram.png">
+      <img id="charEnterMasjid" src="./assets/char-enter_masjid.png">
+      <img id="charFirstSight" src="./assets/char-first_sight_of_kaabah.png">
+      <img id="charNiat" src="./assets/char-make_intentions.png">
+      <img id="charReciteTalbiyah" src="./assets/char-recite_talbiyah.png">
+    </a-assets>
 
     <a-camera id="kameraUser" look-controls="enabled: false"></a-camera>
 
