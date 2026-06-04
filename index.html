@@ -48,19 +48,16 @@
 
   <div id="audio-loader">Memuat Audio...</div>
 
-  <script>
+ <script>
     // KOMPONEN UNTUK KONTROL AUDIO (START/STOP SINKRON)
     AFRAME.registerComponent('audio-handler', {
       init: function () {
         const el = this.el;
-        
-        // Memastikan status target tersimpan
         this.isTargetPresent = false;
 
         el.addEventListener("targetFound", () => {
           this.isTargetPresent = true;
           console.log("Target Ditemukan - Memutar Suara");
-          // Timeout sedikit untuk memastikan audio context sudah stabil
           setTimeout(() => {
             if (this.isTargetPresent && el.components.sound) {
               el.components.sound.playSound();
@@ -78,20 +75,28 @@
       }
     });
 
-    // UNLOCK AUDIO CONTEXT (Penting untuk HP)
-    window.addEventListener('click', () => {
+    // FUNGSI UNTUK MEMBUKA KUNCI AUDIO & MENUTUP OVERLAY
+    function startExperience() {
       const scene = document.querySelector('a-scene');
       const overlay = document.querySelector('#audio-unlock-overlay');
       
+      // Resume audio context A-Frame (Wajib untuk HP)
       if (scene.audioContext) {
         scene.audioContext.resume().then(() => {
-          overlay.classList.add('hidden');
-          console.log("Audio Context Diaktifkan");
+          console.log("Audio Context Aktif");
         });
-      } else {
+      }
+      
+      // Sembunyikan overlay dengan paksa
+      if (overlay) {
+        overlay.style.display = 'none';
         overlay.classList.add('hidden');
       }
-    }, { once: true });
+    }
+
+    // Pasang listener klik dan sentuhan (touchstart untuk HP)
+    window.addEventListener('click', startExperience, { once: true });
+    window.addEventListener('touchstart', startExperience, { once: true });
   </script>
 
   <a-scene 
@@ -125,7 +130,7 @@
     <a-entity mindar-image-target="targetIndex: 1" 
               audio-handler
               sound="src: #audioTalbiyah; on: manual; poolSize: 1; volume: 1; positional: false">
-      <a-gltf-model id="kaaba1" src="#modelKaabaNew" position="0.00 0.50  -1.10" rotation="90 0 0" scale="5.15 5.15 5.15"></a-gltf-model>
+      <a-gltf-model id="kaaba1" src="#modelKaabaNew" position="0.00 0.50  -1.10" rotation="-180 -255 115" scale="5.15 5.15 5.15"></a-gltf-model>
     </a-entity>
 
     <!-- first sight of kaaba -->
