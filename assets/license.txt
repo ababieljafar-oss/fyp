@@ -1,0 +1,11 @@
+Model Information:
+* title:	Completely Kaaba 3D By Cubic Studio
+* source:	https://sketchfab.com/3d-models/completely-kaaba-3d-by-cubic-studio-617b65c65ca14dbabcafdc5df4c4c6ca
+* author:	Cubic Studio 3D (https://sketchfab.com/Cubic_Studio)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Completely Kaaba 3D By Cubic Studio" (https://sketchfab.com/3d-models/completely-kaaba-3d-by-cubic-studio-617b65c65ca14dbabcafdc5df4c4c6ca) by Cubic Studio 3D (https://sketchfab.com/Cubic_Studio) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

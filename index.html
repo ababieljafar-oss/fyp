@@ -6,24 +6,93 @@
   <title>MSU FYP - Interactive Umrah AR</title>
   
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-  
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <script src="https://raw.githubusercontent.com/blairmacintyre/aframe-look-at-billboard-component/refs/heads/master/dist/aframe-look-at-billboard-component.min.js"></script>
   
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    
     #mindar-ui-loading { 
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; 
       font-family: sans-serif; color: white; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; 
     }
-    #mindar-ui-loading.hidden { display: none; }
+    
+    /* Overlay untuk mengaktifkan audio (Syarat Browser) */
+    #audio-unlock-overlay {
+      position: absolute; width: 100%; height: 100%; top: 0; left: 0;
+      background: rgba(0,0,0,0.7); z-index: 1000; display: flex;
+      justify-content: center; align-items: center; color: white;
+      font-family: sans-serif; text-align: center; cursor: pointer;
+    }
+    #audio-unlock-overlay.hidden { display: none; }
+
+    #audio-loader {
+      position: absolute; bottom: 20px; left: 20px; z-index: 998;
+      color: white; font-family: sans-serif; font-size: 12px;
+      background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px;
+      display: none;
+    }
   </style>
 </head>
 <body>
 
+  <div id="audio-unlock-overlay">
+    <div>
+      <h2>Pengalaman AR Siap</h2>
+      <p>Ketuk di mana saja untuk mengaktifkan suara & kamera</p>
+    </div>
+  </div>
+
   <div id="mindar-ui-loading">
     <div>Mempersiapkan Kamera WebAR...</div>
   </div>
+
+  <div id="audio-loader">Memuat Audio...</div>
+
+  <script>
+    // KOMPONEN UNTUK KONTROL AUDIO (START/STOP SINKRON)
+    AFRAME.registerComponent('audio-handler', {
+      init: function () {
+        const el = this.el;
+        
+        // Memastikan status target tersimpan
+        this.isTargetPresent = false;
+
+        el.addEventListener("targetFound", () => {
+          this.isTargetPresent = true;
+          console.log("Target Ditemukan - Memutar Suara");
+          // Timeout sedikit untuk memastikan audio context sudah stabil
+          setTimeout(() => {
+            if (this.isTargetPresent && el.components.sound) {
+              el.components.sound.playSound();
+            }
+          }, 100);
+        });
+
+        el.addEventListener("targetLost", () => {
+          this.isTargetPresent = false;
+          console.log("Target Hilang - Menghentikan Suara");
+          if (el.components.sound) {
+            el.components.sound.stopSound();
+          }
+        });
+      }
+    });
+
+    // UNLOCK AUDIO CONTEXT (Penting untuk HP)
+    window.addEventListener('click', () => {
+      const scene = document.querySelector('a-scene');
+      const overlay = document.querySelector('#audio-unlock-overlay');
+      
+      if (scene.audioContext) {
+        scene.audioContext.resume().then(() => {
+          overlay.classList.add('hidden');
+          console.log("Audio Context Diaktifkan");
+        });
+      } else {
+        overlay.classList.add('hidden');
+      }
+    }, { once: true });
+  </script>
 
   <a-scene 
     mindar-image="imageTargetSrc: ./targets.mind; uiLoading: #mindar-ui-loading;" 
@@ -31,8 +100,13 @@
     embedded vr-mode-ui="enabled: false" 
     device-orientation-permission-ui="enabled: false">
     
-    <a-assets>
-      <a-asset-item id="modelMasjid" src="./assets/kaaba.glb"></a-asset-item>
+    <a-assets timeout="15000">
+      <a-asset-item id="modelKaaba" src="./assets/kaaba.glb"></a-asset-item>
+      <a-asset-item id="modelMaqam" src="./assets/scene.gltf"></a-asset-item>
+      
+      <!-- <audio id="audioPanduan" src="./assets/panduan.mp3" preload="auto"></audio> -->
+      <audio id="audioTalbiyah" src="./assets/audio/talbiyah.mp3" preload="auto"></audio>
+
       <img id="charWearIhram" src="./assets/char-wear_ihram.png">
       <img id="charEnterMasjid" src="./assets/char-enter_masjid.png">
       <img id="charFirstSight" src="./assets/char-first_sight_of_kaaba.png">
@@ -40,34 +114,48 @@
       <img id="charReciteTalbiyah" src="./assets/char-recite_talbiyah.png">
     </a-assets>
 
-    <a-camera id="kameraUser" look-controls="enabled: false"></a-camera>
+    <a-camera id="kameraUser" look-controls="enabled: false" wasd-controls-enabled="false"></a-camera>
 
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-gltf-model src="#modelMasjid" position="0 0.1 0" rotation="0 0 0" scale="0.1 0.1 0.1"></a-gltf-model>
-      <a-image src="#charWearIhram" position="0.2 0.5 0.1" width="0.6" height="0.9" look-at="#kameraUser"></a-image>
+    <a-entity mindar-image-target="targetIndex: 0"> 
+      <a-gltf-model id="kaaba0" src="#modelMaqam" position="0 0 0" rotation="0 0 0" scale="0.1 0.1 0.1"></a-gltf-model>
     </a-entity>
 
-    <a-entity mindar-image-target="targetIndex: 1">
-      <a-gltf-model src="#modelMasjid" position="0 0.1 0" rotation="0 0 0" scale="0.1 0.1 0.1"></a-gltf-model>
-      <a-image src="#charEnterMasjid" position="0.2 0.5 0.1" width="0.6" height="0.9" look-at="#kameraUser"></a-image>
+    <!-- first sight of kaab -->
+    <a-entity mindar-image-target="targetIndex: 1" 
+              audio-handler
+              sound="src: #audioTalbiyah; on: manual; poolSize: 1; volume: 1; positional: false">
+      <a-gltf-model id="kaaba1" src="#modelKaaba" position="-6.5  0  0.00" rotation="90 0 0" scale="0.40 0.40 0.40"></a-gltf-model>
     </a-entity>
 
-    <a-entity mindar-image-target="targetIndex: 2">
-      <a-gltf-model src="#modelMasjid" position="0 0.1 0" rotation="0 0 0" scale="0.1 0.1 0.1"></a-gltf-model>
-      <a-image src="#charFirstSight" position="0.2 0.5 0.1" width="0.6" height="0.9" look-at="#kameraUser"></a-image>
+    <!-- first sight of kaaba -->
+    <a-entity mindar-image-target="targetIndex: 2"
+              audio-handler
+              sound="src: #audioPanduan; on: manual; poolSize: 1; volume: 1; positional: false">
+      <a-gltf-model id="kaaba2" src="#modelKaaba" position="-25.55 -7 -4.2" rotation="90 0 0" scale="6.9 6.9 6.9"></a-gltf-model>
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 3">
-      <a-gltf-model src="#modelMasjid" position="-100 0.1 0" rotation="-90 0 0" scale="1 1 1"></a-gltf-model>
-      <a-image src="#charNiat" position="0.2 0.5 0.1" width="0.6" height="0.9" look-at="#kameraUser"></a-image>
+      <a-gltf-model id="kaaba3" src="#modelKaaba" position="-25.55 -7 -4.2" rotation="90 0 0" scale="6.9 6.9 6.9"></a-gltf-model>
     </a-entity>
 
+    <!-- make intentions -->
     <a-entity mindar-image-target="targetIndex: 4">
-      <a-gltf-model src="#modelMasjid" position="0 0.1 0" rotation="0 0 0" scale="0.1 0.1 0.1"></a-gltf-model>
-      <a-image src="#charReciteTalbiyah" position="0.2 0.5 0.1" width="0.6" height="0.9" look-at="#kameraUser"></a-image>
+      <a-gltf-model id="kaaba4" src="#modelKaaba" position="-25.55 -7 -4.2" rotation="90 0 0" scale="6.9 6.9 6.9"></a-gltf-model>
     </a-entity>
 
   </a-scene>
+
+  <script>
+    // Logic Indikator Loading Audio
+    const assets = document.querySelector('a-assets');
+    const audioLoader = document.querySelector('#audio-loader');
+    
+    audioLoader.style.display = 'block';
+    assets.addEventListener('loaded', () => {
+      audioLoader.style.display = 'none';
+      console.log("Semua aset visual dan audio siap.");
+    });
+  </script>
 
 </body>
 </html>
