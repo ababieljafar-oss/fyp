@@ -1,179 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Precision Editor Pro - Camera Fix</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MSU FYP - Interactive Umrah AR</title>
+  
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  
   <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #111; }
-    #overlay {
-      position: absolute; top: 10px; left: 10px; z-index: 100;
-      background: rgba(0,0,0,0.9); color: white; padding: 20px;
-      border-radius: 10px; width: 340px; border: 1px solid #444;
-      pointer-events: auto;
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    
+    #mindar-ui-loading { 
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; 
+      font-family: sans-serif; color: white; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; 
     }
-    .code-box {
-      background: #000; color: #0f0; padding: 10px; font-family: monospace;
-      font-size: 11px; margin-top: 10px; border-radius: 5px; white-space: pre-wrap;
-      border: 1px solid #333; min-height: 50px;
+    
+    /* Overlay untuk mengaktifkan audio (Syarat Browser HP) */
+    #audio-unlock-overlay {
+      position: fixed; width: 100%; height: 100%; top: 0; left: 0;
+      background: rgba(0,0,0,0.8); z-index: 2000; display: flex;
+      justify-content: center; align-items: center; color: white;
+      font-family: sans-serif; text-align: center; cursor: pointer;
     }
-    .guide { font-size: 11px; color: #aaa; line-height: 1.5; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px; }
-    .kbd { background: #333; padding: 2px 4px; border-radius: 3px; color: #fff; font-family: monospace; font-size: 10px; }
-    h4 { margin: 0 0 5px 0; color: #fff; text-transform: uppercase; font-size: 13px; }
-    .input-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 10px; }
-    .input-group input { background: #222; color: #fff; border: 1px solid #555; padding: 5px; text-align: center; border-radius: 3px; }
+    #audio-unlock-overlay.hidden { display: none !important; }
+
+    #audio-loader {
+      position: absolute; bottom: 20px; left: 20px; z-index: 998;
+      color: white; font-family: sans-serif; font-size: 12px;
+      background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px;
+      display: none;
+    }
   </style>
 </head>
 <body>
 
-  <div id="overlay">
-    <h4>Ultra-Precision Editor</h4>
-    <p style="font-size: 11px; color: #00ff00; margin: 0;">FIX: ARROW KEYS LOCKED TO ASSET</p>
-    
-    <div class="input-group">
-      <input type="number" id="posX" step="0.01" placeholder="X">
-      <input type="number" id="posY" step="0.01" placeholder="Y">
-      <input type="number" id="posZ" step="0.01" placeholder="Z">
-    </div>
-
-    <div class="guide">
-      <b>🎥 KAMERA:</b> <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span> (Jalan) | <b>Mouse:</b> Lihat<br>
-      <b>🚀 ASSET:</b> Tombol Panah <span class="kbd">←↑→↓</span> (Geser)<br>
-      <span class="kbd">Shift</span> + <span class="kbd">↑</span> / <span class="kbd">↓</span> : Naik / Turun<br>
-      <span class="kbd">J</span> / <span class="kbd">L</span> : Putar | <span class="kbd">+</span> / <span class="kbd">-</span> : Skala<br>
-      <span class="kbd">R</span> : <b>RESET POSISI</b>
-    </div>
-    
-    <div style="margin-top:15px;">
-      <h4>Preview Kode:</h4>
-      <div id="output-code" class="code-box">Klik objek di layar...</div>
+  <div id="audio-unlock-overlay">
+    <div>
+      <h2 style="margin-bottom: 10px;">Pengalaman AR Siap</h2>
+      <p>Ketuk layar untuk mengaktifkan suara & kamera</p>
     </div>
   </div>
 
-  <a-scene cursor="rayOrigin: mouse" raycaster="objects: .targetable">
-    <a-assets>
+  <div id="mindar-ui-loading">
+    <div>Mempersiapkan Kamera WebAR...</div>
+  </div>
+
+  <div id="audio-loader">Memuat Audio...</div>
+
+  <script>
+    // KOMPONEN UNTUK KONTROL AUDIO (START/STOP SINKRON)
+    AFRAME.registerComponent('audio-handler', {
+      init: function () {
+        this.isTargetPresent = false;
+        const el = this.el;
+
+        el.addEventListener("targetFound", () => {
+          this.isTargetPresent = true;
+          console.log("Target Ditemukan");
+          // Jeda sedikit agar audio context stabil setelah resume
+          setTimeout(() => {
+            if (this.isTargetPresent && el.components.sound) {
+              el.components.sound.playSound();
+            }
+          }, 150);
+        });
+
+        el.addEventListener("targetLost", () => {
+          this.isTargetPresent = false;
+          console.log("Target Hilang");
+          if (el.components.sound) {
+            el.components.sound.stopSound();
+          }
+        });
+      }
+    });
+
+    // FUNGSI UNTUK UNLOCK AUDIO & TUTUP OVERLAY
+    const startExperience = () => {
+      const scene = document.querySelector('a-scene');
+      const overlay = document.querySelector('#audio-unlock-overlay');
+      
+      if (scene && scene.audioContext) {
+        scene.audioContext.resume().then(() => {
+          console.log("Audio Context Aktif");
+        });
+      }
+      
+      if (overlay) {
+        overlay.style.display = 'none'; // Paksa hilang
+        overlay.classList.add('hidden');
+      }
+    };
+
+    // Pasang listener klik dan sentuh
+    window.addEventListener('click', startExperience, { once: true });
+    window.addEventListener('touchstart', startExperience, { once: true });
+  </script>
+
+  <a-scene 
+    mindar-image="imageTargetSrc: ./targets.mind; uiLoading: #mindar-ui-loading;" 
+    gltf-model="dracoDecoderPath: https://www.gstatic.com/draco/versioned/decoders/1.4.3/;" 
+    embedded vr-mode-ui="enabled: false" 
+    device-orientation-permission-ui="enabled: false">
+    
+    <a-assets timeout="15000">
       <a-asset-item id="modelKaaba" src="./assets/kaaba.glb"></a-asset-item>
-      <img id="char0" src="./assets/char-wear_ihram.png">
+      <a-asset-item id="modelMaqam" src="./assets/scene.gltf"></a-asset-item>
+      
+      <audio id="audioPanduan" src="./assets/panduan.mp3" preload="auto"></audio>
+      <audio id="audioTalbiyah" src="./assets/audio/talbiyah.mp3" preload="auto"></audio>
+
+      <img id="charWearIhram" src="./assets/char-wear_ihram.png">
+      <img id="charEnterMasjid" src="./assets/char-enter_masjid.png">
+      <img id="charFirstSight" src="./assets/char-first_sight_of_kaaba.png">
+      <img id="charNiat" src="./assets/char-make_intentions.png">
+      <img id="charReciteTalbiyah" src="./assets/char-recite_talbiyah.png">
     </a-assets>
 
-    <a-entity id="rig" position="0 1.6 4" wasd-controls="acceleration: 20; fly: false;">
-      <a-entity camera look-controls="pointerLockEnabled: false"></a-entity>
+    <a-camera id="kameraUser" look-controls="enabled: false" wasd-controls-enabled="false"></a-camera>
+
+    <a-entity mindar-image-target="targetIndex: 0"> 
+      <a-gltf-model id="kaaba0" src="#modelMaqam" position="0 0 0" rotation="0 0 0" scale="0.1 0.1 0.1"></a-gltf-model>
     </a-entity>
 
-    <a-entity id="cardGroup">
-        <a-plane position="0 0 0" rotation="-90 0 0" width="10" height="10" color="#fff" opacity="0.1"></a-plane>
-        <a-grid position="0 0.01 0" geometry="size: 20; spacing: 0.5" material="color: #444; opacity: 0.4"></a-grid>
-
-        <a-entity id="arAsets">
-            <a-entity id="objVisual" class="targetable" 
-                      gltf-model="#modelKaaba" 
-                      geometry="primitive: box; width: 0.5; height: 0.5; depth: 0.5"
-                      material="color: red; opacity: 0.3"
-                      position="0 0.5 0" rotation="0 0 0" scale="1 1 1">
-            </a-entity>
-
-            <a-image id="imgVisual" class="targetable" src="#char0" position="0.5 0.5 0.1" width="0.6" height="0.9"></a-image>
-        </a-entity>
+    <a-entity mindar-image-target="targetIndex: 1" 
+              audio-handler
+              sound="src: #audioTalbiyah; on: manual; poolSize: 1; volume: 1; positional: false">
+      <a-gltf-model id="kaaba1" src="#modelKaabaNew" position="0 0 0" rotation="90 0 0" scale="5.15 5.15 5.15"></a-gltf-model>
     </a-entity>
 
-    <a-light type="ambient" intensity="1.2"></a-light>
+    <a-entity mindar-image-target="targetIndex: 2"
+              audio-handler
+              sound="src: #audioPanduan; on: manual; poolSize: 1; volume: 1; positional: false">
+      <a-gltf-model id="kaaba2" src="#modelKaaba" position="-25.55 -7 -4.2" rotation="90 0 0" scale="6.9 6.9 6.9"></a-gltf-model>
+    </a-entity>
+
+    <a-entity mindar-image-target="targetIndex: 3">
+      <a-gltf-model id="kaaba3" src="#modelKaaba" position="-25.55 -7 -4.2" rotation="90 0 0" scale="6.9 6.9 6.9"></a-gltf-model>
+    </a-entity>
+
+    <a-entity mindar-image-target="targetIndex: 4">
+      <a-gltf-model id="kaaba4" src="#modelKaaba" position="-25.55 -7 -4.2" rotation="90 0 0" scale="6.9 6.9 6.9"></a-gltf-model>
+    </a-entity>
+
   </a-scene>
 
   <script>
-    let selectedEl = null;
-    const outputBox = document.getElementById('output-code');
-
-    // Matikan fungsi panah pada wasd-controls secara manual agar tidak konflik
-    window.addEventListener('keydown', (e) => {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        // Jika sedang mengedit objek, cegah event panah sampai ke kamera
-        if (selectedEl) {
-          e.preventDefault(); 
-        }
-      }
-    }, true);
-
-    window.addEventListener('DOMContentLoaded', () => {
-      fetch('/load-coords').then(res => res.json()).then(data => {
-        const obj = document.getElementById('objVisual');
-        const img = document.getElementById('imgVisual');
-        if (data.kaaba) {
-          obj.setAttribute('position', data.kaaba.pos);
-          obj.setAttribute('rotation', data.kaaba.rot);
-          obj.setAttribute('scale', data.kaaba.scl);
-        }
-        if (data.karakter) {
-          img.setAttribute('position', data.karakter.pos);
-          img.setAttribute('rotation', data.karakter.rot);
-        }
-      });
-    });
-
-    function save() {
-      if (!selectedEl) return;
-      const pos = selectedEl.getAttribute('position');
-      const rot = selectedEl.getAttribute('rotation');
-      const scl = selectedEl.getAttribute('scale') || {x:1, y:1, z:1};
-      const idTarget = selectedEl.id === 'objVisual' ? 'kaaba0' : 'karakter0';
-
-      document.getElementById('posX').value = pos.x.toFixed(2);
-      document.getElementById('posY').value = pos.y.toFixed(2);
-      document.getElementById('posZ').value = pos.z.toFixed(2);
-
-      const p = `${pos.x.toFixed(2)} ${pos.y.toFixed(2)} ${pos.z.toFixed(2)}`;
-      const r = `${Math.round(rot.x)} ${Math.round(rot.y)} ${Math.round(rot.z)}`;
-      const s = `${scl.x.toFixed(2)} ${scl.y.toFixed(2)} ${scl.z.toFixed(2)}`;
-
-      outputBox.innerText = `<a-entity id="${idTarget}" position="${p}" rotation="${r}" scale="${s}"></a-entity>`;
-
-      fetch('/save-coords', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: idTarget, position: p, rotation: r, scale: s })
-      });
-    }
-
-    document.querySelectorAll('.targetable').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selectedEl = el;
-        document.querySelectorAll('.targetable').forEach(obj => obj.setAttribute('opacity', 0.5));
-        if(el.tagName === 'A-IMAGE') el.setAttribute('opacity', 1);
-        save();
-      });
-    });
-
-    window.addEventListener('keydown', (e) => {
-      if (document.activeElement.tagName === 'INPUT' || !selectedEl) return;
-
-      let pos = selectedEl.getAttribute('position');
-      let rot = selectedEl.getAttribute('rotation');
-      let scl = selectedEl.getAttribute('scale') || {x:1, y:1, z:1};
-
-      if (e.key.toLowerCase() === 'r') {
-        pos = {x: 0, y: 0.5, z: 0};
-        selectedEl.setAttribute('position', pos);
-        save(); return;
-      }
-
-      // Geser Aset (Panah) - Kamera tidak akan ikut bergerak karena preventDefault di atas
-      if (e.key === 'ArrowLeft') pos.x -= 0.05;
-      if (e.key === 'ArrowRight') pos.x += 0.05;
-      if (!e.shiftKey && e.key === 'ArrowUp') pos.z -= 0.05;
-      if (!e.shiftKey && e.key === 'ArrowDown') pos.z += 0.05;
-      if (e.shiftKey && e.key === 'ArrowUp') pos.y += 0.05;
-      if (e.shiftKey && e.key === 'ArrowDown') pos.y -= 0.05;
-
-      if (e.key.toLowerCase() === 'j') rot.y -= 5;
-      if (e.key.toLowerCase() === 'l') rot.y += 5;
-      if (e.key === '=' || e.key === '+') { scl.x += 0.05; scl.y += 0.05; scl.z += 0.05; }
-      if (e.key === '-' || e.key === '_') { scl.x -= 0.05; scl.y -= 0.05; scl.z -= 0.05; }
-
-      selectedEl.setAttribute('position', pos);
-      selectedEl.setAttribute('rotation', rot);
-      selectedEl.setAttribute('scale', scl);
-      save();
+    // Indikator Loading Aset
+    const assets = document.querySelector('a-assets');
+    const audioLoader = document.querySelector('#audio-loader');
+    
+    if (audioLoader) audioLoader.style.display = 'block';
+    assets.addEventListener('loaded', () => {
+      if (audioLoader) audioLoader.style.display = 'none';
+      console.log("Aset siap.");
     });
   </script>
+
 </body>
 </html>

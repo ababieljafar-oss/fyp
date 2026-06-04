@@ -101,6 +101,7 @@
     device-orientation-permission-ui="enabled: false">
     
     <a-assets timeout="15000">
+      <a-asset-item id="modelKaabaNew" src="./assets/kaaba3dnew.glb"></a-asset-item>
       <a-asset-item id="modelKaaba" src="./assets/kaaba.glb"></a-asset-item>
       <a-asset-item id="modelMaqam" src="./assets/scene.gltf"></a-asset-item>
       
@@ -124,7 +125,7 @@
     <a-entity mindar-image-target="targetIndex: 1" 
               audio-handler
               sound="src: #audioTalbiyah; on: manual; poolSize: 1; volume: 1; positional: false">
-      <a-gltf-model id="kaaba1" src="#modelKaaba" position="-6.5  0  0.00" rotation="90 0 0" scale="0.40 0.40 0.40"></a-gltf-model>
+      <a-gltf-model id="kaaba1" src="#modelKaabaNew" position="0.00 0.50  -1.10" rotation="90 0 0" scale="5.15 5.15 5.15"></a-gltf-model>
     </a-entity>
 
     <!-- first sight of kaaba -->
